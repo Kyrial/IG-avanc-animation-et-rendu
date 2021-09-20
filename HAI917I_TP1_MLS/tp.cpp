@@ -340,11 +340,8 @@ void reshape(int w, int h) {
 
 void projection(Vec3 input , Vec3 & output ,Vec3 const & position , Vec3 const & normal){
 
-
-float X  = Vec3::dot(  ( position - input ) , normal) / normal.length();
-
-
-output = input -  X* normal;
+    float X  = Vec3::dot(  ( input - position ) , normal) / normal.length();
+    output = input -  X* normal;
 
 }
 
@@ -355,7 +352,7 @@ output = input -  X* normal;
 
 void HPSS( Vec3 inputPoint , Vec3 & outputPoint , Vec3 & outputNormal ,
 std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree ,
-int kernel_type, unsigned int nbIterations = 1 , unsigned int knn = 20 ) {
+int kernel_type, unsigned int nbIterations = 1 , unsigned int knn = 10 ) {
 
 
 int k=0;
@@ -369,7 +366,7 @@ ANNdistArray square_distances_to_neighbors = new ANNdist[ knn ];
 
 //knearest( point_t const & i_position , int k , ANNidxArray id_nearest_neighbors , ANNdistArray square_distances_to_neighbors )
 kdtree.knearest( inputPoint , knn , id_nearest_neighbors, square_distances_to_neighbors );
-
+//Vec3 input =inputPoint;
 Vec3 n_nomi = Vec3(0,0,0);
 Vec3 c_nomi=  Vec3(0,0,0);
 float sumW=0;
@@ -378,27 +375,31 @@ Vec3 output[knn];
 
 for( int i=0; i<knn; i++){
 
-    projection(inputPoint, output[i], positions[id_nearest_neighbors[i]], positions[square_distances_to_neighbors[i]]);
+    projection(inputPoint, output[i], positions[id_nearest_neighbors[i]], normals[id_nearest_neighbors[i]]);
     
 
 
 
 
-float h =  square_distances_to_neighbors[knn-1];
-double w=0;
+    float h =  sqrt(square_distances_to_neighbors[knn-1]);
+    double w=0;
 
-double r = (inputPoint - positions[id_nearest_neighbors[i]]).length();
+    double r = (inputPoint - positions[id_nearest_neighbors[i]]).length();
 
     if (kernel_type==0){
         w=exp(-pow(r,2)/pow(h,2));
     }
+        if (kernel_type==2){
+        w=pow(h/r,2);
+    }
+    //printf("w = %f  et h = %f\n",w, h);
     c_nomi += w*output[i];
-    n_nomi += (w*positions[square_distances_to_neighbors[i]]);
+    n_nomi += (w*normals[id_nearest_neighbors[i]]);
     sumW += w;
 
 }
-outputPoint =  c_nomi / sumW;
-outputNormal = n_nomi / sumW;
+    outputPoint =  c_nomi / sumW;
+    outputNormal = n_nomi / sumW;
   delete [] id_nearest_neighbors;
   delete [] square_distances_to_neighbors;
   k++;
@@ -456,8 +457,7 @@ int main (int argc, char ** argv) {
         Vec3 outputPoint;
         Vec3 outputNormal;
         for(int i=0; i< positions2.size(); i++ ){
-            HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  0 , 5 , 20 );
-           
+            HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  2 , 5 , 8 );       
         }
         
         // PROJECT USING MLS (HPSS and APSS):
