@@ -389,7 +389,10 @@ for( int i=0; i<knn; i++){
     if (kernel_type==0){
         w=exp(-pow(r,2)/pow(h,2));
     }
-        if (kernel_type==2){
+        if (kernel_type==1){
+        w=pow(1- ( r / h ) ,4) * ( 1 + 4 * ( r / h ) );
+    }
+    if (kernel_type==2){
         w=pow(h/r,2);
     }
     //printf("w = %f  et h = %f\n",w, h);
