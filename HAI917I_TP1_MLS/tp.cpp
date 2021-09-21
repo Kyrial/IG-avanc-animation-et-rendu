@@ -439,7 +439,10 @@ int main (int argc, char ** argv) {
 
     {
         // Load a first pointset, and build a kd-tree:
-        loadPN("pointsets/igea.pn" , positions , normals);
+        //loadPN("pointsets/igea.pn" , positions , normals);
+      //  loadPN("pointsets/dino_subsampled_extreme.pn" , positions , normals);
+               loadPN("pointsets/dino.pn" , positions , normals);
+
 
         BasicANNkdTree kdtree;
         kdtree.build(positions);
@@ -453,16 +456,27 @@ int main (int argc, char ** argv) {
                         -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
                         -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)
                         );
-            positions2[pIt].normalize();
-            positions2[pIt] = 0.6 * positions2[pIt];
+           // positions2[pIt].normalize();
+            positions2[pIt] = 1 * positions2[pIt];
         }
+        
+        
+        //ajout de bruit dans la normals;
+        for( unsigned int pIt = 0 ; pIt < normals.size() ; ++pIt ) {
+            normals[pIt] = Vec3(
+                        normals[pIt][0]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
+                        normals[pIt][1]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
+                        normals[pIt][2]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX))
+                        );
+        }
+        
+        
 
         Vec3 outputPoint;
         Vec3 outputNormal;
         for(int i=0; i< positions2.size(); i++ ){
-            HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  2 , 5 , 8 );       
-        }
-        
+            HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  0 , 30 , 20 );       
+       }        
         // PROJECT USING MLS (HPSS and APSS):
         // TODO
     }
