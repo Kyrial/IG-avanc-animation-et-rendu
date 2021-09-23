@@ -345,7 +345,12 @@ void projection(Vec3 input , Vec3 & output ,Vec3 const & position , Vec3 const &
 
 }
 
+void APSS( Vec3 inputPoint , Vec3 & outputPoint , Vec3 & outputNormal ,
+std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree ,
+int kernel_type, unsigned int nbIterations = 1 , unsigned int knn = 10 ) {
 
+
+}
 
 
 
@@ -462,20 +467,21 @@ int main (int argc, char ** argv) {
         
         
         //ajout de bruit dans la normals;
-        for( unsigned int pIt = 0 ; pIt < normals.size() ; ++pIt ) {
-            normals[pIt] = Vec3(
-                        normals[pIt][0]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
-                        normals[pIt][1]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
-                        normals[pIt][2]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX))
+        for( unsigned int pIt = 0 ; pIt < normals2.size() ; ++pIt ) {
+            normals2[pIt] = Vec3(
+                        normals2[pIt][0]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
+                        normals2[pIt][1]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
+                        normals2[pIt][2]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX))
                         );
         }
         
         
 
-        Vec3 outputPoint;
-        Vec3 outputNormal;
+   //     Vec3 outputPoint;
+      //  Vec3 outputNormal;
         for(int i=0; i< positions2.size(); i++ ){
-            HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  0 , 30 , 20 );       
+            //HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  0 , 30 , 20 );  
+            HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  0 , 5 , 8 );       
        }        
         // PROJECT USING MLS (HPSS and APSS):
         // TODO
