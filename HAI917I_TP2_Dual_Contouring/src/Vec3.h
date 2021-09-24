@@ -80,6 +80,8 @@ static inline Vec3 operator - (Vec3 const & a , Vec3 const & b) {
 static inline Vec3 operator * (float a , Vec3 const & b) {
    return Vec3(a*b[0] , a*b[1] , a*b[2]);
 }
+
+
 static inline Vec3 operator / (Vec3 const &  a , float b) {
    return Vec3(a[0]/b , a[1]/b , a[2]/b);
 }

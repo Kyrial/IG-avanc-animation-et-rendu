@@ -39,23 +39,24 @@ std::vector< Vec3 > normals;
 std::vector< Vec3 > positions2;
 std::vector< Vec3 > normals2;
 
-
+//std::vector< Vec3 > dualContouring;
 
 struct Voxel{
 int cube[8];
 int id=-1;
-std::vector< Vec3 > Sommet;
+
 };
 
 
 struct Grid{
     std::vector< Vec3 > quadrillage;
     std::vector< Voxel > voxels; 
-    int x=38;
-    int y=38;
-    int z=38;
+    int x=30;
+    int y=30;
+    int z=30;
     Vec3 BBmin=Vec3(-1,-1,-1);    
     Vec3 BBmax=Vec3(1,1,1);
+    std::vector< Vec3 > Sommet;
 }grid;
 
 // -------------------------------------------
@@ -265,7 +266,15 @@ void drawQuadrillage(){
     glPointSize(2); 
     glColor3f(0.8,0.8,0);
     drawPointSet( grid.quadrillage, grid.quadrillage);
+
 }
+void drawSommet(){
+    glPointSize(6); 
+    glColor3f(0.9,0,0.8);
+    drawPointSet( grid.Sommet, grid.Sommet);
+    
+}
+
 
 
 
@@ -275,7 +284,11 @@ void display () {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     camera.apply ();
     draw ();
+
+
 drawQuadrillage();
+ drawSommet();
+
 
     glFlush ();
     glutSwapBuffers ();
@@ -515,6 +528,45 @@ void initQuadrillage(Grid & grid ){
 }
 
 
+void detectChangementSigne(Grid & grid,std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree){
+    
+    float Xmin = grid.BBmin[0];
+    float Ymin = grid.BBmin[1];
+    float Zmin = grid.BBmin[2];
+
+    float Xmax = grid.BBmax[0];
+    float Ymax = grid.BBmax[1];
+    float Zmax = grid.BBmax[2];
+
+
+   float milieuX=((Xmax-Xmin)/(float)(grid.x-1))/2;
+   float milieuY=((Ymax-Ymin)/(float)(grid.y-1))/2;
+   float milieuZ=((Zmax-Zmin)/(float)(grid.z-1))/2;
+    for(int i = 0; i< grid.voxels.size();i++){
+        bool changement =false;
+        float testSigne=0;
+        for(int j=0; j<8;j++){
+            Vec3 outputPoint;
+            Vec3 outputNormal;
+            HPSS( grid.quadrillage[grid.voxels[i].cube[j]] , outputPoint , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+            
+            float signe = Vec3::dot((grid.quadrillage[grid.voxels[i].cube[j]]-outputPoint),outputNormal);
+
+            if((signe > 0 && testSigne <0) || (signe < 0 && testSigne > 0) )
+                changement = true;
+           testSigne=signe;
+
+        }
+        if(changement){
+            //printf("test !");
+            grid.voxels[i].id = grid.Sommet.size();
+            grid.Sommet.push_back(
+                grid.quadrillage[grid.voxels[i].cube[0]]+Vec3(milieuX,milieuY,milieuZ) );
+
+            
+        }
+    }
+}
 
 
 
@@ -547,47 +599,18 @@ int main (int argc, char ** argv) {
         BasicANNkdTree kdtree;
         kdtree.build(positions);
 
-        // Create a second pointset that is artificial, and project it on pointset1 using MLS techniques:
-     /*   positions2.resize( 20000 );
-        normals2.resize(positions2.size());
-        for( unsigned int pIt = 0 ; pIt < positions2.size() ; ++pIt ) {
-            positions2[pIt] = Vec3(
-                        -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
-                        -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
-                        -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)
-                        );
-           // positions2[pIt].normalize();
-            positions2[pIt] = 1 * positions2[pIt];
-        }
-        
-        
-        //ajout de bruit dans la normals;
-        for( unsigned int pIt = 0 ; pIt < normals2.size() ; ++pIt ) {
-            normals2[pIt] = Vec3(
-                        normals2[pIt][0]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
-                        normals2[pIt][1]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)),
-                        normals2[pIt][2]*(-0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX))
-                        );
-        }
-        
-        
 
-   //     Vec3 outputPoint;
-      //  Vec3 outputNormal;
-        for(int i=0; i< positions2.size(); i++ ){
-            //HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  0 , 30 , 20 );  
-            HPSS( positions2[i] , positions2[i] , normals2[i] ,positions , normals , kdtree ,  0 , 5 , 8 );       
-       }        
-        // PROJECT USING MLS (HPSS and APSS):
-        // TODO
-    }*/
-
-
-    initBB(grid,positions  );
+    initBB(grid,positions );
     initVoxel(grid);
 
 
     initQuadrillage(grid);
+
+   detectChangementSigne( grid,  positions ,  normals , kdtree);
+
+
+    
+
 
 
     glutMainLoop ();
