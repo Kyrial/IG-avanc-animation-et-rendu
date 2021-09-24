@@ -40,6 +40,13 @@ std::vector< Vec3 > positions2;
 std::vector< Vec3 > normals2;
 
 //std::vector< Vec3 > dualContouring;
+struct triangle{
+    std::vector< Vec3 >  i_positions;
+    std::vector< unsigned int >  i_triangles;
+}triangles;
+
+
+
 
 struct Voxel{
 int cube[8];
@@ -227,7 +234,8 @@ void init () {
 
 void drawTriangleMesh( std::vector< Vec3 > const & i_positions , std::vector< unsigned int > const & i_triangles ) {
     glBegin(GL_TRIANGLES);
-    for(unsigned int tIt = 0 ; tIt < i_triangles.size() / 3 ; ++tIt) {
+    for(unsigned int tIt = 0 ; tIt < i_triangles.size() ; ++tIt) {
+       
         Vec3 p0 = i_positions[3*tIt];
         Vec3 p1 = i_positions[3*tIt+1];
         Vec3 p2 = i_positions[3*tIt+2];
@@ -272,6 +280,11 @@ void drawSommet(){
     glPointSize(6); 
     glColor3f(0.9,0,0.8);
     drawPointSet( grid.Sommet, grid.Sommet);
+
+    
+    drawTriangleMesh(triangles.i_positions, triangles.i_triangles);    
+
+
     
 }
 
@@ -608,8 +621,27 @@ int main (int argc, char ** argv) {
 
    detectChangementSigne( grid,  positions ,  normals , kdtree);
 
+    int count =0;
+    for(int i=0;i<grid.x-1;i++)
+        for(int j=0;j<grid.y-1;j++)
+            for(int k=0;k<grid.z-1;k++){
+                
+            
+                if((grid.voxels[count].id !=-1) && (grid.voxels[count+1].id !=-1) && (grid.voxels[count+grid.z].id!=-1)){
+                    //printf("test %i \n",grid.voxels[count].id );
+                    Vec3  tri[3];
+                    tri[0]=grid.quadrillage[grid.voxels[count].id];
+                    tri[1]=grid.quadrillage[grid.voxels[count+1].id];
+                    tri[2]=grid.quadrillage[grid.voxels[count+grid.z].id];
+                    triangles.i_positions.push_back(tri[0]);
+                    triangles.i_positions.push_back(tri[1]);
+                    triangles.i_positions.push_back(tri[2]);
+                    triangles.i_triangles.push_back(triangles.i_triangles.size());
+               
+             }
+              count++;
+            }
 
-    
 
 
 
