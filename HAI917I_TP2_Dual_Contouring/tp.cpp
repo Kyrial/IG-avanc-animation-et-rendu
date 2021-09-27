@@ -40,7 +40,7 @@ std::vector< Vec3 > positions2;
 std::vector< Vec3 > normals2;
 
 //std::vector< Vec3 > dualContouring;
-struct triangle{
+struct Triangle{
     std::vector< Vec3 >  i_positions;
     std::vector< unsigned int >  i_triangles;
 }triangles;
@@ -58,9 +58,9 @@ int id=-1;
 struct Grid{
     std::vector< Vec3 > quadrillage;
     std::vector< Voxel > voxels; 
-    int x=30;
-    int y=30;
-    int z=30;
+    int x=20;
+    int y=20;
+    int z=20;
     Vec3 BBmin=Vec3(-1,-1,-1);    
     Vec3 BBmax=Vec3(1,1,1);
     std::vector< Vec3 > Sommet;
@@ -277,7 +277,7 @@ void drawQuadrillage(){
 
 }
 void drawSommet(){
-    glPointSize(6); 
+    glPointSize(3); 
     glColor3f(0.9,0,0.8);
     drawPointSet( grid.Sommet, grid.Sommet);
 
@@ -299,8 +299,8 @@ void display () {
     draw ();
 
 
-drawQuadrillage();
- drawSommet();
+	//drawQuadrillage();
+	drawSommet();
 
 
     glFlush ();
@@ -495,11 +495,13 @@ void initBB(Grid & grid,std::vector<Vec3>const & positions  ){
 
 
 void initVoxel(Grid & grid){
-    int count=0;
+
     for(int i=0;i<grid.x-1;i++)
         for(int j=0;j<grid.y-1;j++)
             for(int k=0;k<grid.z-1;k++){
+				int count = i*grid.y*grid.z + j* grid.z + k;
                 Voxel voxels;
+				//printf("cube %i, %i, %i, %i, %i, %i, %i, %i \n", 
             voxels.cube[0]=count;
             voxels.cube[1]=count+1;
             voxels.cube[2]=count+grid.z;
@@ -509,9 +511,8 @@ void initVoxel(Grid & grid){
             voxels.cube[6]=count+grid.z*grid.y+grid.z;
             voxels.cube[7]=count+grid.z*grid.y+grid.z+1;
             grid.voxels.push_back(voxels);
-            count++;
+           
             }
-
 
 }
 
@@ -532,14 +533,13 @@ void initQuadrillage(Grid & grid ){
    float intervalZ=(Zmax-Zmin)/(float)(grid.z-1);
 
     grid.quadrillage.resize(grid.x*grid.y*grid.z);
-    int count = 0;
+   // int count = 0;
     for(int i=0;i<grid.x;i++)
         for(int j=0;j<grid.y;j++)
             for(int k=0;k<grid.z;k++)
-                grid.quadrillage[count++] = Vec3(Xmin+intervalX*i, Ymin+intervalY*j, Zmin+intervalZ*k); 
-                //quadrillage[i*j*z+j*z+k] = Vec3(Xmin+intervalX*i, Ymin+intervalY*j, Zmin+intervalZ*k);
+                //grid.quadrillage[count++] = Vec3(Xmin+intervalX*i, Ymin+intervalY*j, Zmin+intervalZ*k); 
+                grid.quadrillage[i*grid.y*grid.z + j* grid.z + k] = Vec3(Xmin+intervalX*i, Ymin+intervalY*j, Zmin+intervalZ*k);
 }
-
 
 void detectChangementSigne(Grid & grid,std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree){
     
@@ -574,13 +574,55 @@ void detectChangementSigne(Grid & grid,std::vector<Vec3>const & positions , std:
             //printf("test !");
             grid.voxels[i].id = grid.Sommet.size();
             grid.Sommet.push_back(
-                grid.quadrillage[grid.voxels[i].cube[0]]+Vec3(milieuX,milieuY,milieuZ) );
+                grid.quadrillage[grid.voxels[i].cube[0]]+Vec3(milieuX,milieuY,milieuZ));
 
             
         }
     }
 }
 
+void createTriangle(Grid &grid, Triangle &triangles, int pos, int pos1, int pos2){
+                    Vec3  tri[3];
+                    tri[0]=grid.Sommet[grid.voxels[pos].id];
+                    tri[1]=grid.Sommet[grid.voxels[pos1].id];
+                    tri[2]=grid.Sommet[grid.voxels[pos2].id];
+	
+                    triangles.i_positions.push_back(tri[0]);
+                    triangles.i_positions.push_back(tri[1]);
+                    triangles.i_positions.push_back(tri[2]);
+	
+                    triangles.i_triangles.push_back(triangles.i_triangles.size());  
+}
+/*
+bool containsList(int a, int b){
+    int list[6] = {1,grid.z-1,(grid.z-1)*(grid.y-1), -1,-(grid.z-1),-((grid.z-1)*(grid.y-1))};
+    for(int i = 0; i < 6; i++)
+        if((a - b ) == list[i])
+            return true;
+    return false;
+}*/
+
+void placeAllTriangle(Grid &grid, Triangle & triangles, std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree){
+	int pos =0;
+    for(int i=0;i<grid.x-1;i++)
+        for(int j=0;j<grid.y-1;j++)
+            for(int k=0;k<grid.z-1;k++){
+                pos = i*grid.y*grid.z + j* grid.z + k;
+				int list[8]= {0,1,grid.z-1,grid.z,(grid.z-1)*(grid.y-1),(grid.z-1)*(grid.y-1)+1,(grid.z-1)*(grid.y-1)+grid.z-1,(grid.z-1)*(grid.y-1)+grid.z-1+1};
+            
+				for(int a=0; a<8;a++)
+					for( int b = 0; b<8; b++)
+						for( int c = 0; c<8; c++)
+							if((a!=b && b != c && a != c) )
+								if( (grid.voxels[pos+list[c]].id !=-1) && (grid.voxels[pos+list[a]].id !=-1) && (grid.voxels[pos+list[b]].id!=-1){
+									//Vec3 outputPoint=Vec3(0,0,0);
+									//Vec3 outputNormal=Vec3(0,0,0);
+									//HPSS( grid.Sommet[grid.voxels[pos].id] , outputPoint , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+									//float signe = Vec3::dot((grid.quadrillage[grid.voxels[i].cube[j]]-outputPoint),outputNormal);
+									createTriangle( grid,  triangles,  pos+list[c], pos+list[b], pos+list[a]);
+							
+							}
+		}}
 
 
 int main (int argc, char ** argv) {
@@ -620,29 +662,9 @@ int main (int argc, char ** argv) {
     initQuadrillage(grid);
 
    detectChangementSigne( grid,  positions ,  normals , kdtree);
-
-    int count =0;
-    for(int i=0;i<grid.x-1;i++)
-        for(int j=0;j<grid.y-1;j++)
-            for(int k=0;k<grid.z-1;k++){
-                
-            
-                if((grid.voxels[count].id !=-1) && (grid.voxels[count+1].id !=-1) && (grid.voxels[count+grid.z].id!=-1)){
-                    //printf("test %i \n",grid.voxels[count].id );
-                    Vec3  tri[3];
-                    tri[0]=grid.quadrillage[grid.voxels[count].id];
-                    tri[1]=grid.quadrillage[grid.voxels[count+1].id];
-                    tri[2]=grid.quadrillage[grid.voxels[count+grid.z].id];
-                    triangles.i_positions.push_back(tri[0]);
-                    triangles.i_positions.push_back(tri[1]);
-                    triangles.i_positions.push_back(tri[2]);
-                    triangles.i_triangles.push_back(triangles.i_triangles.size());
-               
-             }
-              count++;
-            }
-
-
+	
+	placeAllTriangle(grid,  triangles,positions ,  normals , kdtree);
+	
 
 
     glutMainLoop ();
