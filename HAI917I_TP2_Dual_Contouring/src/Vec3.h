@@ -39,6 +39,15 @@ public:
         mVals[1] += other[1];
         mVals[2] += other[2];
     }
+	    bool operator == (Vec3 const & other) {
+       if( mVals[0] == other[0] &&
+        mVals[1] == other[1] &&
+        mVals[2] == other[2])
+		   return true;
+		return false;
+    }
+	
+	
     void operator -= (Vec3 const & other) {
         mVals[0] -= other[0];
         mVals[1] -= other[1];

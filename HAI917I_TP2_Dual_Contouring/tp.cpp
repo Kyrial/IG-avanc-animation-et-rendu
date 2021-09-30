@@ -58,9 +58,9 @@ struct Grid{
     std::vector< Vec3 > quadrillage;
 
     std::vector< Voxel > voxels; 
-    int x=32;
-    int y=32;
-    int z=32;
+    int x=50;
+    int y=50;
+    int z=50;
     std::vector<std::vector<std::vector< Vec3 >>> quadrillage3d;// (x, std::vector<std::vector<Vec3>> (y, std::vector<Vec3>(z,Vec3(0,0,0))));
 
 
@@ -289,10 +289,10 @@ void drawQuadrillage3d(){
 }
 void drawSommet(){
     glPointSize(3); 
-    glColor3f(0.9,0,0.8);
+    glColor3f(0.1,0.9,0.1);
     drawPointSet( grid.Sommet, grid.Sommet);
-
-    
+ 
+    glColor3f(0.9,0,0.8);
     drawTriangleMesh(triangles.i_positions, triangles.i_triangles);    
 
 
@@ -307,7 +307,7 @@ void display () {
     glLoadIdentity ();
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     camera.apply ();
-    draw ();
+    //draw ();
 
 
 	//drawQuadrillage();
@@ -501,8 +501,8 @@ void initBB(Grid & grid,std::vector<Vec3>const & positions  ){
             grid.BBmax[2]= positions[i][2]; 
 
     }
-grid.BBmin=grid.BBmin- (grid.BBmax-grid.BBmin)/30;
-    grid.BBmax=grid.BBmax+ (grid.BBmax-grid.BBmin)/30;
+grid.BBmin=grid.BBmin- (grid.BBmax-grid.BBmin)/10;
+    grid.BBmax=grid.BBmax+ (grid.BBmax-grid.BBmin)/10;
 
 }
 
@@ -608,6 +608,20 @@ void detectChangementSigne(Grid & grid,std::vector<Vec3>const & positions , std:
         }
     }
 }
+void createTriangle(Grid &grid, Triangle &triangles, Vec3 pos, Vec3 pos1, Vec3 pos2){
+
+    if(pos == Vec3(0,0,0) || pos2 == Vec3(0,0,0) || pos1 == Vec3(0,0,0))
+        return;
+    
+    Vec3  tri[3];
+    tri[0]=pos;
+    tri[1]=pos1;
+    tri[2]=pos2;
+    triangles.i_positions.push_back(tri[0]);
+    triangles.i_positions.push_back(tri[1]);
+    triangles.i_positions.push_back(tri[2]);	
+    triangles.i_triangles.push_back(triangles.i_triangles.size());
+}
 
 void createTriangle(Grid &grid, Triangle &triangles, int pos, int pos1, int pos2,float signe){
                     Vec3  tri[3];
@@ -635,6 +649,48 @@ bool containsList(int a, int b){
     return false;
 }*/
 
+void subdiviseTriangle(Triangle & triangles,std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree,Vec3 pt1, Vec3 pt2, Vec3 pt3,int iteration=1){
+    Vec3 milieu12= (pt1+pt2)/2.0;
+    Vec3 milieu23=(pt2+pt3)/2.0;
+    Vec3 milieu13=(pt3+pt1)/2.0;
+    
+    Vec3 outputNormal=Vec3(0,0,0);
+    HPSS( milieu12 , milieu12 , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+    HPSS( milieu23 , milieu23 , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+    HPSS( milieu13 , milieu13 , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+    
+    
+    if(iteration <1){
+    subdiviseTriangle(triangles,positions ,  normals ,  kdtree, pt1,  milieu12,  milieu13, iteration-1);
+    subdiviseTriangle(triangles,positions ,  normals ,  kdtree, pt2,  milieu12,  milieu23, iteration-1);
+        subdiviseTriangle(triangles,positions ,  normals ,  kdtree, pt3,  milieu23,  milieu13, iteration-1);
+    }
+    else{
+
+        triangles.i_positions.push_back(pt1);
+        triangles.i_positions.push_back(milieu12);
+        triangles.i_positions.push_back(milieu13);
+        triangles.i_triangles.push_back(triangles.i_triangles.size());
+ 
+        triangles.i_positions.push_back(pt2);
+        triangles.i_positions.push_back(milieu12);
+        triangles.i_positions.push_back(milieu23);
+        triangles.i_triangles.push_back(triangles.i_triangles.size());
+
+        triangles.i_positions.push_back(pt3);
+        triangles.i_positions.push_back(milieu23);
+        triangles.i_positions.push_back(milieu13);
+        triangles.i_triangles.push_back(triangles.i_triangles.size());
+        
+   
+    
+    }
+
+}
+
+
+
+
 void placeAllTriangle(Grid &grid, Triangle & triangles, std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree){
 	
     
@@ -660,7 +716,11 @@ void placeAllTriangle(Grid &grid, Triangle & triangles, std::vector<Vec3>const &
                            //                           (grid.Sommet[grid.voxels[pos+list[a]].id][2]+grid.Sommet[grid.voxels[pos+list[b]].id][2]+grid.Sommet[grid.voxels[pos+list[c]].id][2])/3);
                             //HPSS( centreTriangle , outputPoint , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
                             //float signe =1;// Vec3::dot((centreTriangle-outputPoint),outputNormal);
-                            createTriangle( grid,  triangles,  pos+list[c], pos+list[b], pos+list[a],1);
+                            //createTriangle( grid,  triangles,  pos+list[c], pos+list[b], pos+list[a],1);
+                            subdiviseTriangle(triangles, positions ,  normals ,  kdtree,
+                                              grid.Sommet[grid.voxels[pos+list[a]].id],
+                                              grid.Sommet[grid.voxels[pos+list[b]].id],
+                                              grid.Sommet[grid.voxels[pos+list[c]].id],50);
         
 				
         }
