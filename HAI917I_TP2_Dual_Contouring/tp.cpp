@@ -51,16 +51,19 @@ struct Triangle{
 struct Voxel{
 int cube[8];
 int id=-1;
-
 };
 
 
 struct Grid{
     std::vector< Vec3 > quadrillage;
+
     std::vector< Voxel > voxels; 
-    int x=20;
-    int y=20;
-    int z=20;
+    int x=50;
+    int y=50;
+    int z=50;
+    std::vector<std::vector<std::vector< Vec3 >>> quadrillage3d;// (x, std::vector<std::vector<Vec3>> (y, std::vector<Vec3>(z,Vec3(0,0,0))));
+
+
     Vec3 BBmin=Vec3(-1,-1,-1);    
     Vec3 BBmax=Vec3(1,1,1);
     std::vector< Vec3 > Sommet;
@@ -276,12 +279,20 @@ void drawQuadrillage(){
     drawPointSet( grid.quadrillage, grid.quadrillage);
 
 }
+void drawQuadrillage3d(){
+    glPointSize(2); 
+    glColor3f(0.8,0.8,0);
+    for(int i=0; i<grid.quadrillage3d.size();i++)
+        for(int j=0; j<grid.quadrillage3d[i].size();j++)
+           drawPointSet( grid.quadrillage3d[i][j], grid.quadrillage3d[i][j]);
+
+}
 void drawSommet(){
     glPointSize(3); 
-    glColor3f(0.9,0,0.8);
+    glColor3f(0.1,0.9,0.1);
     drawPointSet( grid.Sommet, grid.Sommet);
-
-    
+ 
+    glColor3f(0.9,0,0.8);
     drawTriangleMesh(triangles.i_positions, triangles.i_triangles);    
 
 
@@ -296,10 +307,11 @@ void display () {
     glLoadIdentity ();
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     camera.apply ();
-    draw ();
+    //draw ();
 
 
 	//drawQuadrillage();
+    //drawQuadrillage3d();
 	drawSommet();
 
 
@@ -489,7 +501,8 @@ void initBB(Grid & grid,std::vector<Vec3>const & positions  ){
             grid.BBmax[2]= positions[i][2]; 
 
     }
-
+grid.BBmin=grid.BBmin- (grid.BBmax-grid.BBmin)/10;
+    grid.BBmax=grid.BBmax+ (grid.BBmax-grid.BBmin)/10;
 
 }
 
@@ -531,14 +544,24 @@ void initQuadrillage(Grid & grid ){
    float intervalX=(Xmax-Xmin)/(float)(grid.x-1);
    float intervalY=(Ymax-Ymin)/(float)(grid.y-1);
    float intervalZ=(Zmax-Zmin)/(float)(grid.z-1);
-
+   //vector<vector<vector<int>>> vec(m, vector<int> (n, 0));
     grid.quadrillage.resize(grid.x*grid.y*grid.z);
    // int count = 0;
-    for(int i=0;i<grid.x;i++)
-        for(int j=0;j<grid.y;j++)
-            for(int k=0;k<grid.z;k++)
+    
+    for(int i=0;i<grid.x;i++){
+    //    std::vector<std::vector<Vec3>> taby;
+        for(int j=0;j<grid.y;j++){
+//std::vector<Vec3> tabz;
+            for(int k=0;k<grid.z;k++){
                 //grid.quadrillage[count++] = Vec3(Xmin+intervalX*i, Ymin+intervalY*j, Zmin+intervalZ*k); 
                 grid.quadrillage[i*grid.y*grid.z + j* grid.z + k] = Vec3(Xmin+intervalX*i, Ymin+intervalY*j, Zmin+intervalZ*k);
+     //           tabz.push_back(Vec3(Xmin+intervalX*i, Ymin+intervalY*j, Zmin+intervalZ*k));
+            }
+//taby.push_back(tabz);
+        }
+     //   grid.quadrillage3d.push_back(taby);
+    }
+            
 }
 
 void detectChangementSigne(Grid & grid,std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree){
@@ -572,26 +595,50 @@ void detectChangementSigne(Grid & grid,std::vector<Vec3>const & positions , std:
         }
         if(changement){
             //printf("test !");
+            Vec3 outputPoint=Vec3(0,0,0);
+            Vec3 outputNormal=Vec3(0,0,0);
+            HPSS( grid.quadrillage[grid.voxels[i].cube[0]]+Vec3(milieuX,milieuY,milieuZ) , outputPoint , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
             grid.voxels[i].id = grid.Sommet.size();
-            grid.Sommet.push_back(
-                grid.quadrillage[grid.voxels[i].cube[0]]+Vec3(milieuX,milieuY,milieuZ));
+            
+          //  grid.Sommet.push_back(
+          //      grid.quadrillage[grid.voxels[i].cube[0]]+Vec3(milieuX,milieuY,milieuZ));
+            grid.Sommet.push_back(outputPoint);
 
             
         }
     }
 }
+void createTriangle(Grid &grid, Triangle &triangles, Vec3 pos, Vec3 pos1, Vec3 pos2){
 
-void createTriangle(Grid &grid, Triangle &triangles, int pos, int pos1, int pos2){
+    if(pos == Vec3(0,0,0) || pos2 == Vec3(0,0,0) || pos1 == Vec3(0,0,0))
+        return;
+    
+    Vec3  tri[3];
+    tri[0]=pos;
+    tri[1]=pos1;
+    tri[2]=pos2;
+    triangles.i_positions.push_back(tri[0]);
+    triangles.i_positions.push_back(tri[1]);
+    triangles.i_positions.push_back(tri[2]);	
+    triangles.i_triangles.push_back(triangles.i_triangles.size());
+}
+
+void createTriangle(Grid &grid, Triangle &triangles, int pos, int pos1, int pos2,float signe){
                     Vec3  tri[3];
+    if(signe>0){
                     tri[0]=grid.Sommet[grid.voxels[pos].id];
                     tri[1]=grid.Sommet[grid.voxels[pos1].id];
                     tri[2]=grid.Sommet[grid.voxels[pos2].id];
-	
+    }else{
+         tri[0]=grid.Sommet[grid.voxels[pos].id];
+          tri[2]=grid.Sommet[grid.voxels[pos2].id];
+                    tri[1]=grid.Sommet[grid.voxels[pos1].id];
+                  }
                     triangles.i_positions.push_back(tri[0]);
                     triangles.i_positions.push_back(tri[1]);
                     triangles.i_positions.push_back(tri[2]);
 	
-                    triangles.i_triangles.push_back(triangles.i_triangles.size());  
+                    triangles.i_triangles.push_back(triangles.i_triangles.size());
 }
 /*
 bool containsList(int a, int b){
@@ -602,26 +649,81 @@ bool containsList(int a, int b){
     return false;
 }*/
 
+void subdiviseTriangle(Triangle & triangles,std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree,Vec3 pt1, Vec3 pt2, Vec3 pt3,int iteration=1){
+    Vec3 milieu12= (pt1+pt2)/2.0;
+    Vec3 milieu23=(pt2+pt3)/2.0;
+    Vec3 milieu13=(pt3+pt1)/2.0;
+    
+    Vec3 outputNormal=Vec3(0,0,0);
+    HPSS( milieu12 , milieu12 , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+    HPSS( milieu23 , milieu23 , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+    HPSS( milieu13 , milieu13 , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+    
+    
+    if(iteration <1){
+    subdiviseTriangle(triangles,positions ,  normals ,  kdtree, pt1,  milieu12,  milieu13, iteration-1);
+    subdiviseTriangle(triangles,positions ,  normals ,  kdtree, pt2,  milieu12,  milieu23, iteration-1);
+        subdiviseTriangle(triangles,positions ,  normals ,  kdtree, pt3,  milieu23,  milieu13, iteration-1);
+    }
+    else{
+
+        triangles.i_positions.push_back(pt1);
+        triangles.i_positions.push_back(milieu12);
+        triangles.i_positions.push_back(milieu13);
+        triangles.i_triangles.push_back(triangles.i_triangles.size());
+ 
+        triangles.i_positions.push_back(pt2);
+        triangles.i_positions.push_back(milieu12);
+        triangles.i_positions.push_back(milieu23);
+        triangles.i_triangles.push_back(triangles.i_triangles.size());
+
+        triangles.i_positions.push_back(pt3);
+        triangles.i_positions.push_back(milieu23);
+        triangles.i_positions.push_back(milieu13);
+        triangles.i_triangles.push_back(triangles.i_triangles.size());
+        
+   
+    
+    }
+
+}
+
+
+
+
 void placeAllTriangle(Grid &grid, Triangle & triangles, std::vector<Vec3>const & positions , std::vector<Vec3>const & normals , BasicANNkdTree const & kdtree){
-	int pos =0;
-    for(int i=0;i<grid.x-1;i++)
-        for(int j=0;j<grid.y-1;j++)
-            for(int k=0;k<grid.z-1;k++){
-                pos = i*grid.y*grid.z + j* grid.z + k;
-				int list[8]= {0,1,grid.z-1,grid.z,(grid.z-1)*(grid.y-1),(grid.z-1)*(grid.y-1)+1,(grid.z-1)*(grid.y-1)+grid.z-1,(grid.z-1)*(grid.y-1)+grid.z-1+1};
+	
+    
+    for(int x=0; x<grid.voxels.size();x++){
+        int pos = grid.voxels[x].cube[0];
+        int list[8]= {0,1,grid.z-1,grid.z,(grid.z-1)*(grid.y-1),(grid.z-1)*(grid.y-1)+1,(grid.z-1)*(grid.y-1)+grid.z-1,(grid.z-1)*(grid.y-1)+grid.z-1+1};
+      //  int ordreTriangle[14*3] = {0,1,2, 1,3,2, 0,2,4, 2,6,4, 0,5,1, 5,0,4, 0,5,7, 0,2,7, 1,3,4, 3,4,6, 0,1,7, 7,6,0, 2,3,5, 5,4,2};
+       
+        for(int a=0; a<8;a++)
+            for( int b = 0; b<8; b++)
+                for( int c = 0; c<8; c++)
+                    if((a!=b && b != c && a != c))
+                        if( (grid.voxels[pos+list[c]].id !=-1) && (grid.voxels[pos+list[a]].id !=-1) && (grid.voxels[pos+list[b]].id!=-1)){
+                        
+    //    for(int tri =0; tri<(14*3);tri+=3){
+     //         printf("miaou");
+      //        createTriangle(grid,  triangles,  pos+list[ordreTriangle[tri]],pos+list[ordreTriangle[tri+1]],pos+list[ordreTriangle[tri+2]],1);
             
-				for(int a=0; a<8;a++)
-					for( int b = 0; b<8; b++)
-						for( int c = 0; c<8; c++)
-							if((a!=b && b != c && a != c) )
-								if( (grid.voxels[pos+list[c]].id !=-1) && (grid.voxels[pos+list[a]].id !=-1) && (grid.voxels[pos+list[b]].id!=-1){
-									//Vec3 outputPoint=Vec3(0,0,0);
-									//Vec3 outputNormal=Vec3(0,0,0);
-									//HPSS( grid.Sommet[grid.voxels[pos].id] , outputPoint , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
-									//float signe = Vec3::dot((grid.quadrillage[grid.voxels[i].cube[j]]-outputPoint),outputNormal);
-									createTriangle( grid,  triangles,  pos+list[c], pos+list[b], pos+list[a]);
-							
-							}
+                           // Vec3 outputPoint=Vec3(0,0,0);
+                           // Vec3 outputNormal=Vec3(0,0,0);
+                           // Vec3 centreTriangle = Vec3((grid.Sommet[grid.voxels[pos+list[a]].id][0]+grid.Sommet[grid.voxels[pos+list[b]].id][0]+grid.Sommet[grid.voxels[pos+list[c]].id][0])/3,
+                           //                           (grid.Sommet[grid.voxels[pos+list[a]].id][1]+grid.Sommet[grid.voxels[pos+list[b]].id][1]+grid.Sommet[grid.voxels[pos+list[c]].id][1])/3,
+                           //                           (grid.Sommet[grid.voxels[pos+list[a]].id][2]+grid.Sommet[grid.voxels[pos+list[b]].id][2]+grid.Sommet[grid.voxels[pos+list[c]].id][2])/3);
+                            //HPSS( centreTriangle , outputPoint , outputNormal ,positions , normals , kdtree ,  0 , 5 , 8 );
+                            //float signe =1;// Vec3::dot((centreTriangle-outputPoint),outputNormal);
+                            //createTriangle( grid,  triangles,  pos+list[c], pos+list[b], pos+list[a],1);
+                            subdiviseTriangle(triangles, positions ,  normals ,  kdtree,
+                                              grid.Sommet[grid.voxels[pos+list[a]].id],
+                                              grid.Sommet[grid.voxels[pos+list[b]].id],
+                                              grid.Sommet[grid.voxels[pos+list[c]].id],50);
+        
+				
+        }
 		}}
 
 
