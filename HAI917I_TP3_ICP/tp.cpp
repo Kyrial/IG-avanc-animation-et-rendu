@@ -505,7 +505,8 @@ while(ite++<nIterations){
         centroide(ps, Centroide1);
         centroide(qs, Centroide2);
 
-        //translation(ps,  Centroide1, Centroide2); 
+       // translation(ps,  Centroide1, Centroide2); 
+       // Centroide1 = Centroide2;
         std::vector<Vec3> pslocal;
         std::vector<Vec3> qslocal;
         PositionToCentroide( ps, pslocal , Centroide2);
@@ -513,7 +514,7 @@ while(ite++<nIterations){
         std::vector<Vec3> psNearest;
         psNearest.resize( ps.size() );
         for(int i =0; i< ps.size(); i++){
-            psNearest[i]=nps[qsKdTree.nearest(ps[i])];
+            psNearest[i]=ps[qsKdTree.nearest(ps[i])];
         }
 
 
@@ -570,8 +571,8 @@ int main (int argc, char ** argv) {
         // Load a first pointset, and build a kd-tree:
         //loadPN("pointsets/igea.pn" , positions , normals);
       //  loadPN("pointsets/dino_subsampled_extreme.pn" , positions , normals);
-    loadPN("pointsets/dino.pn" , positions , normals);
-    loadPN("pointsets/dino2.pn" , positions2 , normals2);
+    loadPN("pointsets/igea.pn" , positions , normals);
+    loadPN("pointsets/igea2.pn" , positions2 , normals2);
 
     srand (time(NULL));
     Mat3 ICProtation = Mat3::RandRotation();
@@ -591,7 +592,7 @@ int main (int argc, char ** argv) {
 
      Mat3 rotation = Mat3();
      Vec3 translation = Vec3();
-     int nIterations = 20;
+     int nIterations = 10;
          ICP( positions , normals ,
             positions2 , normals2 ,
             qsdKdTree ,  rotation , translation , 
