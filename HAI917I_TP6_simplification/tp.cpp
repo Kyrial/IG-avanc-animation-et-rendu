@@ -676,21 +676,21 @@ std::vector< Triangle > triangleCellule(Grid &grid, std::vector<Vec3>const & pos
 
 
     for( int i=0; i< triangles.size(); i++){
-        int x0= (triangles[i].v[0][0]-grid.BBmin[0])/intervalX;
-        int y0 = (triangles[i].v[0][1]-grid.BBmin[1])/intervalY;
-        int z0 = (triangles[i].v[0][2]-grid.BBmin[2])/intervalZ;
+        int x0= (positions[triangles[i].v[0]][0]-grid.BBmin[0])/intervalX;
+        int y0 = (positions[triangles[i].v[0]][1]-grid.BBmin[1])/intervalY;
+        int z0 = (positions[triangles[i].v[0]][2]-grid.BBmin[2])/intervalZ;
 
-        int voxelIndice0 = x0*grid.y0*grid.z + y0* grid.z + z0;
+        int voxelIndice0 = x0*grid.y*grid.z + y0* grid.z + z0;
 
-        int x1= (triangles[i].v[1][0]-grid.BBmin[0])/intervalX;
-        int y1 = (triangles[i].v[1][1]-grid.BBmin[1])/intervalY;
-        int z1 = (triangles[i].v[1][2]-grid.BBmin[2])/intervalZ;
+        int x1= (positions[triangles[i].v[1]][0]-grid.BBmin[0])/intervalX;
+        int y1 = (positions[triangles[i].v[1]][1]-grid.BBmin[1])/intervalY;
+        int z1 = (positions[triangles[i].v[1]][2]-grid.BBmin[2])/intervalZ;
 
         int voxelIndice1 = x1*grid.y*grid.z + y1* grid.z + z1;
 
-        int x2= (triangles[i].v[2][0]-grid.BBmin[0])/intervalX;
-        int y2 = (triangles[i].v[2][1]-grid.BBmin[1])/intervalY;
-        int z2 = (triangles[i].v[2][2]-grid.BBmin[2])/intervalZ;
+        int x2= (positions[triangles[i].v[2]][0]-grid.BBmin[0])/intervalX;
+        int y2 = (positions[triangles[i].v[2]][1]-grid.BBmin[1])/intervalY;
+        int z2 = (positions[triangles[i].v[2]][2]-grid.BBmin[2])/intervalZ;
 
         int voxelIndice2 = x2*grid.y*grid.z + y2* grid.z + z2;
         if(voxelIndice0 != voxelIndice1 && voxelIndice0 != voxelIndice2 && voxelIndice1 != voxelIndice2)
