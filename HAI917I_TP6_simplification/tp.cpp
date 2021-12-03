@@ -518,8 +518,8 @@ void display () {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     camera.apply ();
     draw ();
-    drawQuadrillage();
-    drawCelluleNonVide();
+    //drawQuadrillage();
+    //drawCelluleNonVide();
     glFlush ();
     glutSwapBuffers ();
 }
@@ -649,18 +649,28 @@ void remplirCellule(Grid &grid, std::vector<Vec3>const & positions , std::vector
         int y = (positions[i][1]-grid.BBmin[1])/intervalY;
         int z = (positions[i][2]-grid.BBmin[2])/intervalZ;
         int voxelIndice = x*grid.y*grid.z + y* grid.z + z;
-        printf(" initCoord    %f %f %f \n",positions[i][0],positions[i][1],positions[i][2]);
-        printf(" test cube %i \n", x*grid.y*grid.z + y* grid.z + z);
+       // printf(" initCoord    %f %f %f \n",positions[i][0],positions[i][1],positions[i][2]);
+       // printf(" test cube %i \n", x*grid.y*grid.z + y* grid.z + z);
         grid.voxels[voxelIndice].pointInCellule.push_back(positions[i]);
 //        printf("         %f %f %f \n\n ", grid.quadrillage[grid.voxels[voxelIndice].cube[0]][0], grid.quadrillage[grid.voxels[voxelIndice].cube[0]][1], grid.quadrillage[grid.voxels[voxelIndice].cube[0]][2]);
-        printf("         %f %f %f \n\n ", grid.quadrillage[voxelIndice][0], grid.quadrillage[voxelIndice][1], grid.quadrillage[voxelIndice][2]);
+       // printf("         %f %f %f \n\n ", grid.quadrillage[voxelIndice][0], grid.quadrillage[voxelIndice][1], grid.quadrillage[voxelIndice][2]);
 
        grid.cellules[voxelIndice].pointInCellule.push_back(positions[i]);
         
     }
 }
 
-std::vector< Triangle > triangleCellule(Grid &grid, std::vector<Vec3>const & positions , std::vector< Triangle > & triangles){
+
+Vec3 getCentreCellule(std::vector<Vec3> tab){
+    Vec3 out = Vec3(0,0,0);
+    for(int i = 0; i < tab.size(); i++){
+        out= out + tab[i];
+    }
+    return out /tab.size();
+}
+
+
+std::vector< Triangle > triangleCellule(Grid &grid, std::vector<Vec3> & positions , std::vector< Triangle > & triangles){
     float Xmin = grid.BBmin[0];
     float Ymin = grid.BBmin[1];
     float Zmin = grid.BBmin[2];
@@ -676,25 +686,30 @@ std::vector< Triangle > triangleCellule(Grid &grid, std::vector<Vec3>const & pos
 
 
     for( int i=0; i< triangles.size(); i++){
-        int x0= (positions[triangles[i].v[0]][0]-grid.BBmin[0])/intervalX;
+        int x0=  (positions[triangles[i].v[0]][0]-grid.BBmin[0])/intervalX;
         int y0 = (positions[triangles[i].v[0]][1]-grid.BBmin[1])/intervalY;
         int z0 = (positions[triangles[i].v[0]][2]-grid.BBmin[2])/intervalZ;
 
         int voxelIndice0 = x0*grid.y*grid.z + y0* grid.z + z0;
 
-        int x1= (positions[triangles[i].v[1]][0]-grid.BBmin[0])/intervalX;
+        int x1=  (positions[triangles[i].v[1]][0]-grid.BBmin[0])/intervalX;
         int y1 = (positions[triangles[i].v[1]][1]-grid.BBmin[1])/intervalY;
         int z1 = (positions[triangles[i].v[1]][2]-grid.BBmin[2])/intervalZ;
 
         int voxelIndice1 = x1*grid.y*grid.z + y1* grid.z + z1;
 
-        int x2= (positions[triangles[i].v[2]][0]-grid.BBmin[0])/intervalX;
+        int x2=  (positions[triangles[i].v[2]][0]-grid.BBmin[0])/intervalX;
         int y2 = (positions[triangles[i].v[2]][1]-grid.BBmin[1])/intervalY;
         int z2 = (positions[triangles[i].v[2]][2]-grid.BBmin[2])/intervalZ;
 
         int voxelIndice2 = x2*grid.y*grid.z + y2* grid.z + z2;
-        if(voxelIndice0 != voxelIndice1 && voxelIndice0 != voxelIndice2 && voxelIndice1 != voxelIndice2)
+        if(voxelIndice0 != voxelIndice1 && voxelIndice0 != voxelIndice2 && voxelIndice1 != voxelIndice2){
+            //Triangle t = Triangle( grid.quadrillage[voxelIndice0], grid.quadrillage[voxelIndice1], grid.quadrillage[voxelIndice2]);
+            positions[triangles[i].v[0]] = getCentreCellule(grid.cellules[voxelIndice0].pointInCellule);// grid.quadrillage[voxelIndice0];
+            positions[triangles[i].v[1]] =  getCentreCellule(grid.cellules[voxelIndice1].pointInCellule);//grid.quadrillage[voxelIndice1];
+            positions[triangles[i].v[2]] =  getCentreCellule(grid.cellules[voxelIndice2].pointInCellule);//grid.quadrillage[voxelIndice2];
             newTriangles.push_back(triangles[i]);
+        }
 
     }
     return newTriangles;
@@ -746,8 +761,7 @@ int main (int argc, char ** argv) {
 
 
     remplirCellule(grid, mesh.vertices , mesh.normals);
-    //mesh.triangles = 
-    triangleCellule(grid, mesh.vertices , mesh.triangles);
+    mesh.triangles = triangleCellule(grid, mesh.vertices , mesh.triangles);
 
 
     glutMainLoop ();
